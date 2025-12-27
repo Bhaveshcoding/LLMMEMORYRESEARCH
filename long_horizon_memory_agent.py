@@ -1,35 +1,38 @@
-# long_horizon_memory_agent.py
-# FINAL VERSION WITH COMPLETE DEEPSEEK INTEGRATION
-
 import os
 import json
 import math
 import time
 import random
 import re
-import requests
 import nltk
+from openai import OpenAI
 from datetime import datetime
 from dotenv import load_dotenv
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer
+from collections import Counter
+import string
+import httpx
 
-# Load environment variables
 load_dotenv()
 
-# Download required data
 nltk.download('punkt', quiet=True)
 nltk.download('stopwords', quiet=True)
+nltk.download('wordnet', quiet=True)
+nltk.download('punkt_tab', quiet=True)
 
 STOP_WORDS = set(stopwords.words('english'))
 MEMORY_FILE = "memory.json"
 FORGET_LOG_FILE = "forgetting_log.json"
 
-# ==================== DEEPSEEK API SETUP ====================
-# Get API key from environment variable
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "").strip()
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "sk-8abf579415c645a89d739998a041017d").strip()
 DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
-
+client = OpenAI(
+    api_key=DEEPSEEK_API_KEY,
+    base_url=DEEPSEEK_API_URL,
+    http_client=httpx.Client(verify=False)
+)
 
 class SmartMemoryAgent:
     """Smart memory agent with comprehensive DeepSeek AI integration"""
@@ -52,12 +55,11 @@ class SmartMemoryAgent:
         self.forgetting_log = []
         self.memory_categories = {}
         self.last_api_call = 0
-        self.api_call_delay = 1.0  # seconds between calls
+        self.api_call_delay = 1.0
         
         self.load_memory()
         self.load_forgetting_log()
-        
-        # Test API connection if enabled
+
         if self.use_api:
             print("🔌 Testing DeepSeek API connection...")
             test_result = self.test_api_connection()
@@ -70,123 +72,68 @@ class SmartMemoryAgent:
             print("⚠️  DeepSeek API disabled. Using fallback methods.")
     
     def test_api_connection(self):
-        """Test if DeepSeek API is working"""
         try:
-            headers = {
-                "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-                "Content-Type": "application/json"
-            }
-            
-            payload = {
-                "model": "deepseek-chat",
-                "messages": [
+            response = client.chat.completions.create(
+                model="deepseek-chat",
+                messages=[
                     {"role": "system", "content": "You are a test assistant."},
                     {"role": "user", "content": "Say 'API connected'"}
                 ],
-                "max_tokens": 10,
-                "temperature": 0.1
-            }
-            
-            response = requests.post(DEEPSEEK_API_URL, headers=headers, json=payload, timeout=5)
-            return response.status_code == 200
-        except:
+                max_tokens=10,
+                temperature=0.1,
+                timeout=5
+            )
+            return bool(response.choices)
+        except Exception:
             return False
-    
+
     def call_deepseek_api(self, prompt, system_prompt="You are a helpful assistant.", max_tokens=500, temperature=0.3):
-        """Generic function to call DeepSeek API with rate limiting"""
+        """Generic function to call DeepSeek API using OpenAI client"""
         if not self.use_api:
             return ""
-        
-        # Rate limiting
-        current_time = time.time()
-        time_since_last_call = current_time - self.last_api_call
-        
-        if time_since_last_call < self.api_call_delay:
-            time.sleep(self.api_call_delay - time_since_last_call)
-        
-        headers = {
-            "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-            "Content-Type": "application/json"
-        }
-        
-        payload = {
-            "model": "deepseek-chat",
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt}
-            ],
-            "max_tokens": max_tokens,
-            "temperature": temperature
-        }
-        
+
+        now = time.time()
+        delta = now - self.last_api_call
+        if delta < self.api_call_delay:
+            time.sleep(self.api_call_delay - delta)
+
         try:
-            response = requests.post(DEEPSEEK_API_URL, headers=headers, json=payload, timeout=15)
+            response = client.chat.completions.create(
+                model="deepseek-chat",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=max_tokens,
+                temperature=temperature,
+                timeout=15
+            )
+
             self.last_api_call = time.time()
-            
-            if response.status_code == 200:
-                return response.json()['choices'][0]['message']['content'].strip()
-            else:
-                print(f"❌ API Error {response.status_code}: {response.text[:100]}")
-        except requests.exceptions.Timeout:
-            print("⏰ API timeout")
+            return response.choices[0].message.content.strip()
+
         except Exception as e:
-            print(f"⚠️  DeepSeek API error: {e}")
-        
-        return ""
+            print(f"⚠️  DeepSeek API error: {str(e)[:120]}")
+            return ""
     
     def load_memory(self):
-        """Load saved memories from file with error recovery"""
-        if os.path.exists(MEMORY_FILE):
-            try:
-                # Try to load
-                with open(MEMORY_FILE, 'r') as f:
-                    data = f.read()
-                    if not data.strip():
-                        print("⚠️  Memory file is empty")
-                        self.memory = []
-                        return
-                    
-                    self.memory = json.loads(data)
-                
-                # Ensure all memories have required fields
-                for i, memory in enumerate(self.memory):
-                    if 'id' not in memory:
-                        memory['id'] = i
-                    if 'original_text' not in memory:
-                        memory['original_text'] = memory.get('text', '').lower()
-                    if 'access_count' not in memory:
-                        memory['access_count'] = 0
-                    if 'timestamp' not in memory:
-                        memory['timestamp'] = 0
-                    if 'relevance_score' not in memory:
-                        memory['relevance_score'] = 1.0
-                    if 'meaningfulness_score' not in memory:
-                        memory['meaningfulness_score'] = 1.0
-                    if 'keywords' not in memory:
-                        # Re-extract keywords for old memories
-                        memory['keywords'] = self.extract_keywords(memory.get('text', ''))
-                
-                print(f"📂 Loaded {len(self.memory)} memories")
-                
-                # Set time step based on loaded memories
-                if self.memory:
-                    max_timestamp = max(mem.get('timestamp', 0) for mem in self.memory)
-                    self.time_step = max_timestamp + 1
-                    
-            except json.JSONDecodeError:
-                print("⚠️  Memory file corrupted. Creating backup and starting fresh...")
-                # Create backup
-                backup_name = f"{MEMORY_FILE}.backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                os.rename(MEMORY_FILE, backup_name)
-                print(f"✅ Backup created: {backup_name}")
-                self.memory = []
-            except Exception as e:
-                print(f"❌ Error loading memory file: {e}")
-                print("Starting with empty memory...")
-                self.memory = []
-        else:
-            print("📭 No memory file found. Starting fresh.")
-    
+        """Start a fresh memory file for each session, timestamped"""
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        session_file = f"{MEMORY_FILE}.{timestamp}"
+
+        self.memory = []
+        self.time_step = 0
+        self.memory_file = session_file
+
+        try:
+            with open(session_file, "w") as f:
+                json.dump([], f)
+            print(f"🧠 New memory session started: {session_file}")
+        except Exception as e:
+            print(f"❌ Failed to initialize memory file: {e}")
+            self.memory = []
+            self.memory_file = None    
+
     def load_forgetting_log(self):
         """Load forgetting history"""
         if os.path.exists(FORGET_LOG_FILE):
@@ -230,129 +177,80 @@ class SmartMemoryAgent:
             return self.extract_keywords_fallback(text)
     
     def extract_keywords_with_deepseek(self, text):
-        """Extract keywords using DeepSeek AI API - SMART VERSION"""
+        """Extract high-signal keywords using DeepSeek"""
         try:
-            # Smart prompt for keyword extraction
-            prompt = f"""Analyze this text and extract ONLY the most important content keywords.
-            Remove ALL filler words, greetings, emotions, and meaningless content.
-            Focus on nouns, technical terms, and key concepts.
-            Return ONLY a comma-separated list of 3-6 keywords, lowercase, no explanations.
-            
-            Text: "{text}"
-            
-            Keywords:"""
-            
-            keywords_text = self.call_deepseek_api(prompt, "You are an expert at extracting meaningful keywords. Remove all filler words and meaningless content.")
-            
-            if not keywords_text:
-                print("⚠️  DeepSeek returned no response, using fallback")
+            prompt = (
+                "Extract the core content keywords from the text.\n"
+                "Rules:\n"
+                "- 3 to 6 keywords only\n"
+                "- nouns, technical terms, key concepts\n"
+                "- lowercase\n"
+                "- comma-separated\n"
+                "- no filler, no emotions, no explanations\n\n"
+                f"Text:\n{text}\n\n"
+                "Keywords:"
+            )
+
+            response = self.call_deepseek_api(
+                prompt=prompt,
+                system_prompt=(
+                    "You extract only meaningful content keywords. "
+                    "You delete filler, greetings, opinions, and emotional language."
+                ),
+                max_tokens=60,
+                temperature=0.1
+            )
+
+            if not response:
                 return self.extract_keywords_fallback(text)
-            
-            # Clean and process the response
-            keywords = []
-            for k in keywords_text.split(','):
-                k = k.strip().lower()
-                k = k.replace('.', '').replace('!', '').replace('?', '')
-                if k and len(k) > 2 and k not in ['', 'keywords:', 'keyword:']:
-                    keywords.append(k)
-            
-            # Filter out any remaining common meaningless words
-            meaningless_words = {'hello', 'hi', 'hey', 'wow', 'amazing', 'awesome', 
-                               'beautiful', 'nice', 'good', 'great', 'cool', 'ok', 'okay'}
-            keywords = [k for k in keywords if k not in meaningless_words]
-            
+
+            raw = response.lower().strip()
+            raw = raw.replace("\n", "").replace("keywords:", "")
+
+            candidates = [
+                k.strip(" .!?")
+                for k in raw.split(",")
+                if len(k.strip()) > 2
+            ]
+
+            blacklist = {
+                "hello", "hi", "hey", "wow", "amazing", "awesome",
+                "beautiful", "nice", "good", "great", "cool", "ok", "okay"
+            }
+
+            keywords = [k for k in candidates if k not in blacklist]
+
             if keywords:
-                print(f"✅ DeepSeek extracted: {keywords}")
                 return keywords
-            else:
-                print("⚠️  DeepSeek returned no keywords, using fallback")
-                return self.extract_keywords_fallback(text)
-                
-        except Exception as e:
-            print(f"⚠️  DeepSeek keyword extraction error: {e}")
+
+            return self.extract_keywords_fallback(text)
+
+        except Exception:
             return self.extract_keywords_fallback(text)
     
     def extract_keywords_fallback(self, text):
-        """Fallback keyword extraction without API"""
         if not text:
             return []
-            
-        text = text.lower().strip()
-        
-        # Remove punctuation
-        for char in ',.!?;:"\'()[]{}':
-            text = text.replace(char, ' ')
-        
-        # Meaningless words to filter
-        meaningless_words = {
-            'hello', 'hi', 'hey', 'greetings', 'hey', 'hola',
-            'beautiful', 'pretty', 'gorgeous', 'stunning', 'attractive', 'lovely',
-            'nice', 'good', 'great', 'awesome', 'amazing', 'cool', 'excellent',
-            'fantastic', 'wonderful', 'brilliant', 'splendid',
-            'wow', 'oh', 'ah', 'oops', 'yay',
-            'very', 'really', 'quite', 'rather', 'somewhat', 'pretty',
-            'just', 'only', 'simply', 'merely', 'basically',
-            'maybe', 'perhaps', 'possibly', 'probably', 'likely',
-            'well', 'so', 'then', 'now', 'anyway', 'anyways', 'anyhow',
-            'ok', 'okay', 'alright', 'right', 'sure',
-            'please', 'thanks', 'thank', 'sorry', 'excuse',
-            'um', 'uh', 'er', 'ah', 'hmm', 'hm', 'eh',
-            'like', 'you know', 'i mean', 'sort of', 'kind of', 'type of',
-            'actually', 'basically', 'literally', 'seriously', 'honestly',
-            'thing', 'things', 'stuff', 'something', 'anything', 'everything'
-        }
-        
-        # Domain-specific important words
-        domain_words = {
-            'ai', 'artificial', 'intelligence', 'machine', 'learning',
-            'llm', 'bot', 'bots', 'agent', 'agents', 'assistant',
-            'neural', 'network', 'networks', 'deep', 'learning',
-            'python', 'programming', 'code', 'software', 'developer',
-            'memory', 'memories', 'recall', 'remember', 'forgetting', 'forget',
-            'decay', 'temporal', 'long-term', 'short-term',
-            'sport', 'football', 'soccer', 'basketball', 'tennis', 'cricket',
-            'study', 'studies', 'research', 'academic', 'university', 'college',
-            'system', 'systems', 'build', 'building', 'create', 'creating',
-            'develop', 'development', 'design', 'architecture'
-        }
-        
-        words = text.split()
-        keywords = []
-        
-        for word in words:
-            word = word.strip()
-            if len(word) < 2:
-                continue
-            
-            # Skip meaningless words
-            if word in meaningless_words:
-                continue
-            
-            # Skip common stopwords
-            if word in STOP_WORDS:
-                continue
-            
-            # Keep domain words
-            if word in domain_words:
-                keywords.append(word)
-            # Keep longer words (likely meaningful)
-            elif len(word) >= 4:
-                keywords.append(word)
-        
-        # Remove duplicates
-        unique_keywords = list(set(keywords))
-        
-        # Sort: domain words first, then longer words
-        def sort_key(word):
-            if word in domain_words:
-                return (0, -len(word))
-            else:
-                return (1, -len(word))
-        
-        unique_keywords.sort(key=sort_key)
-        
-        return unique_keywords[:6]
-    
+
+        text = text.lower()
+        tokens = word_tokenize(text)
+
+        stop = set(stopwords.words("english"))
+        punct = set(string.punctuation)
+        lemmatizer = WordNetLemmatizer()
+
+        filtered = [
+            lemmatizer.lemmatize(t)
+            for t in tokens
+            if t not in stop
+            and t not in punct
+            and len(t) > 2
+            and t.isalpha()
+        ]
+
+        freq = Counter(filtered)
+        return [w for w, _ in freq.most_common(6)]  
+      
     def analyze_text_meaningfulness(self, text):
         """Analyze text and extract keywords with meaningfulness score"""
         print(f"\n🔍 Analyzing: '{text[:50]}...'" if len(text) > 50 else f"\n🔍 Analyzing: '{text}'")
@@ -464,23 +362,19 @@ class SmartMemoryAgent:
         print("📝 STORE MEMORY WITH DEEPSEEK ANALYSIS")
         print("="*60)
         
-        # Analyze text with DeepSeek
         keywords, meaningful_score = self.analyze_text_meaningfulness(text)
         
-        # Check if we have meaningful content
         if not keywords:
             print(f"\n❌ REJECTED: No meaningful content found")
             print(f"   Text: '{text}'")
             return None
         
-        # Check meaningfulness threshold
-        if meaningful_score < 0.1:  # At least 10% meaningful
+        if meaningful_score < 0.1:
             print(f"\n❌ REJECTED: Low meaningfulness score ({meaningful_score:.2f} < 0.10)")
             choice = input("Store anyway? (yes/no): ").strip().lower()
             if choice != 'yes':
                 return None
         
-        # Check for similar memories
         similar_memories = self.find_similar_memories(text, keywords, threshold=0.6)
         if similar_memories and self.use_api:
             print(f"\n⚠️  Found {len(similar_memories)} similar memories")
@@ -495,12 +389,10 @@ class SmartMemoryAgent:
                     self.save_memory()
                     return merged
         
-        # Check capacity
         if len(self.memory) >= self.max_memories:
             print("\n⚠️  Memory capacity reached. Applying forgetting...")
             self.apply_forgetting()
         
-        # Create memory entry
         memory_entry = {
             'id': len(self.memory),
             'text': text,
@@ -529,374 +421,220 @@ class SmartMemoryAgent:
         return memory_entry
     
     def summarize_memories_with_deepseek(self):
-        """Use DeepSeek to summarize and compress similar memories"""
-        if not self.use_api:
-            print("❌ DeepSeek API required for summarization")
+        if not self.use_api or len(self.memory) < 4:
             return
-        
-        if len(self.memory) < 4:
-            print("❌ Need at least 4 memories to summarize")
-            return
-        
-        # Group memories by topic (simple keyword-based grouping)
-        topic_groups = {}
-        for memory in self.memory:
-            if memory.get('is_merged', False) or memory.get('is_summary', False):
+
+        groups = {}
+        for m in self.memory:
+            if m.get("is_summary") or m.get("is_merged"):
                 continue
-                
-            main_keyword = memory['keywords'][0] if memory['keywords'] else 'other'
-            if main_keyword not in topic_groups:
-                topic_groups[main_keyword] = []
-            topic_groups[main_keyword].append(memory)
-        
-        summaries_created = 0
-        
-        for topic, memories in topic_groups.items():
-            if len(memories) >= 3:
-                print(f"\n🤖 Summarizing {len(memories)} memories about: {topic}")
-                
-                memory_texts = "\n".join([f"- {mem['text']}" for mem in memories])
-                
-                prompt = f"""You are a memory compression expert. I have multiple related memories that need to be summarized into a single concise memory.
-                
-                Related memories:
-                {memory_texts}
-                
-                Create ONE comprehensive summary that captures all key information. 
-                Keep it concise but preserve all unique facts.
-                Return ONLY the summary text without explanations.
-                
-                Summary:"""
-                
-                summary = self.call_deepseek_api(prompt, "You are a memory summarization expert.")
-                
-                if summary:
-                    # Extract new keywords
-                    keywords = self.extract_keywords_with_deepseek(summary)
-                    
-                    # Create summarized memory
-                    summarized_memory = {
-                        'id': len(self.memory),
-                        'text': summary,
-                        'keywords': keywords,
-                        'timestamp': self.time_step,
-                        'access_count': sum(mem.get('access_count', 0) for mem in memories),
-                        'original_text': summary.lower(),
-                        'creation_time': datetime.now().isoformat(),
-                        'relevance_score': max(mem.get('relevance_score', 0) for mem in memories),
-                        'meaningfulness_score': 1.0,
-                        'extraction_method': 'deepseek_summary',
-                        'merged_from': [mem['id'] for mem in memories],
-                        'is_summary': True
-                    }
-                    
-                    # Remove original memories and add summary
-                    memory_ids_to_remove = [mem['id'] for mem in memories]
-                    self.memory = [mem for mem in self.memory if mem['id'] not in memory_ids_to_remove]
-                    self.memory.append(summarized_memory)
-                    
-                    summaries_created += 1
-                    print(f"✅ Summarized {len(memories)} memories into 1")
-        
-        if summaries_created > 0:
+            key = m["keywords"][0] if m.get("keywords") else "other"
+            groups.setdefault(key, []).append(m)
+
+        created = 0
+
+        for topic, mems in groups.items():
+            if len(mems) < 3:
+                continue
+
+            prompt = (
+                "Summarize the following related memories into one concise memory.\n"
+                "Preserve all unique facts. No explanations.\n\n" +
+                "\n".join(f"- {m['text']}" for m in mems) +
+                "\n\nSummary:"
+            )
+
+            summary = self.call_deepseek_api(prompt, "Memory compression expert.", max_tokens=200, temperature=0.2)
+            if not summary:
+                continue
+
+            new_mem = {
+                "id": len(self.memory),
+                "text": summary,
+                "keywords": self.extract_keywords_with_deepseek(summary),
+                "timestamp": self.time_step,
+                "access_count": sum(m.get("access_count", 0) for m in mems),
+                "original_text": summary.lower(),
+                "creation_time": datetime.now().isoformat(),
+                "relevance_score": max(m.get("relevance_score", 1.0) for m in mems),
+                "meaningfulness_score": 1.0,
+                "merged_from": [m["id"] for m in mems],
+                "is_summary": True,
+            }
+
+            remove_ids = set(m["id"] for m in mems)
+            self.memory = [m for m in self.memory if m["id"] not in remove_ids]
+            self.memory.append(new_mem)
+            created += 1
+
+        if created:
             self.save_memory()
-            print(f"\n📊 Total summaries created: {summaries_created}")
-        else:
-            print("\nℹ️  No suitable memory groups found for summarization")
-    
+
     def intelligent_forgetting_with_deepseek(self, candidate_memories):
-        """Use DeepSeek to decide which memories to forget intelligently"""
         if not self.use_api or len(candidate_memories) < 2:
-            return candidate_memories[:min(2, len(candidate_memories))]
-        
-        # Ask DeepSeek to evaluate which memories are least valuable
-        memory_list = "\n".join([f"{i+1}. '{mem['text']}'" for i, mem in enumerate(candidate_memories)])
-        
-        prompt = f"""As a cognitive psychologist, evaluate these memories for forgetting priority.
-        Consider: usefulness, uniqueness, emotional value, and practical importance.
-        
-        Memories to evaluate:
-        {memory_list}
-        
-        Return ONLY the numbers of the 2-3 least valuable memories to forget, separated by commas.
-        For example: "2,5" or "1,3,4"
-        Nothing else."""
-        
-        try:
-            response = self.call_deepseek_api(prompt, "You are a cognitive psychologist specializing in memory retention.")
-            indices_to_forget = []
-            
-            for num in response.strip().split(','):
-                num = num.strip()
-                if num.isdigit():
-                    idx = int(num) - 1
-                    if 0 <= idx < len(candidate_memories):
-                        indices_to_forget.append(idx)
-            
-            if indices_to_forget:
-                # Return memories to forget
-                return [candidate_memories[i] for i in indices_to_forget]
-            else:
-                return candidate_memories[:min(2, len(candidate_memories))]
-                
-        except:
-            return candidate_memories[:min(2, len(candidate_memories))]
+            return candidate_memories[:2]
+
+        prompt = (
+            "Select the 2–3 least valuable memories.\n"
+            "Return only indices.\n\n" +
+            "\n".join(f"{i+1}. {m['text']}" for i, m in enumerate(candidate_memories))
+        )
+
+        resp = self.call_deepseek_api(prompt, "Cognitive psychologist.", max_tokens=30, temperature=0.1)
+        if not resp:
+            return candidate_memories[:2]
+
+        idx = [
+            int(n) - 1 for n in resp.split(",")
+            if n.strip().isdigit() and 0 <= int(n)-1 < len(candidate_memories)
+        ]
+
+        return [candidate_memories[i] for i in idx] if idx else candidate_memories[:2]
     
     def discover_memory_relationships_with_deepseek(self):
-        """Use DeepSeek to find hidden connections between memories"""
-        if not self.use_api:
-            print("❌ DeepSeek API required for pattern discovery")
+        if not self.use_api or len(self.memory) < 3:
             return ""
-        
-        if len(self.memory) < 3:
-            print("❌ Need at least 3 memories to discover patterns")
+
+        sample = random.sample(self.memory, min(5, len(self.memory)))
+
+        prompt = (
+            "Analyze these memories for hidden themes, relationships, contradictions.\n\n" +
+            "\n".join(f"{i+1}. {m['text']}" for i, m in enumerate(sample))
+        )
+
+        analysis = self.call_deepseek_api(prompt, "Pattern recognition expert.", max_tokens=400)
+        if not analysis:
             return ""
-        
-        # Sample memories for analysis
-        sample_size = min(5, len(self.memory))
-        sample_memories = random.sample(self.memory, sample_size)
-        
-        memory_texts = "\n".join([f"{i+1}: '{mem['text']}'" for i, mem in enumerate(sample_memories)])
-        
-        prompt = f"""You are a master of pattern recognition. Analyze these memories and find hidden connections, themes, or insights.
-        
-        Memories:
-        {memory_texts}
-        
-        Identify:
-        1. Common themes or patterns
-        2. Interesting relationships between different memories
-        3. Potential insights or conclusions
-        4. Any contradictions or gaps
-        
-        Return as a structured analysis with clear sections."""
-        
-        analysis = self.call_deepseek_api(prompt, "You are an expert pattern recognizer and analyst.")
-        
-        # Store this analysis as a special meta-memory
-        if analysis:
-            meta_memory = {
-                'id': len(self.memory),
-                'text': f"Pattern Analysis: {analysis[:200]}..." if len(analysis) > 200 else f"Pattern Analysis: {analysis}",
-                'keywords': ['meta-analysis', 'patterns', 'insights', 'relationships'],
-                'timestamp': self.time_step,
-                'is_meta_memory': True,
-                'analysis': analysis,
-                'creation_time': datetime.now().isoformat()
-            }
-            
-            self.memory.append(meta_memory)
-            self.save_memory()
-        
+
+        self.memory.append({
+            "id": len(self.memory),
+            "text": f"Pattern analysis: {analysis[:200]}",
+            "keywords": ["patterns", "analysis"],
+            "timestamp": self.time_step,
+            "is_meta_memory": True,
+            "analysis": analysis,
+            "creation_time": datetime.now().isoformat()
+        })
+
+        self.save_memory()
         return analysis
     
     def personalized_retrieval_with_deepseek(self, query, user_context=""):
-        """Use DeepSeek to understand query context and personalize retrieval"""
-        # First, get standard results
-        standard_memories = self.retrieve_memories(query)
-        
-        if not standard_memories or not self.use_api:
-            return standard_memories
-        
-        # Use DeepSeek to re-rank based on context
-        memories_list = "\n".join([f"{i+1}. '{mem['text']}'" for i, mem in enumerate(standard_memories)])
-        
-        prompt = f"""You are helping retrieve the most relevant memory. 
-        
-        User Query: "{query}"
-        User Context: "{user_context}"
-        
-        Available memories:
-        {memories_list}
-        
-        Return ONLY the numbers (1-{len(standard_memories)}) in order of relevance to the query AND context.
-        Most relevant first, separated by commas.
-        Example: "3,1,2" """
-        
-        ranked_order = self.call_deepseek_api(prompt, "You are a relevance ranking expert.")
-        
-        # Parse and re-order
-        try:
-            order = [int(num.strip()) - 1 for num in ranked_order.split(',') if num.strip().isdigit()]
-            ordered_memories = [standard_memories[i] for i in order if i < len(standard_memories)]
-            
-            # Add any memories not in the ranking
-            all_indices = set(range(len(standard_memories)))
-            ranked_indices = set(order)
-            unranked_indices = all_indices - ranked_indices
-            
-            for idx in unranked_indices:
-                ordered_memories.append(standard_memories[idx])
-                
-            return ordered_memories
-        except:
-            return standard_memories
+        base = self.retrieve_memories(query)
+        if not self.use_api or not base:
+            return base
+
+        prompt = (
+            f"Rank memories by relevance.\nQuery: {query}\nContext: {user_context}\n\n" +
+            "\n".join(f"{i+1}. {m['text']}" for i, m in enumerate(base))
+        )
+
+        resp = self.call_deepseek_api(prompt, "Relevance ranking expert.", max_tokens=40, temperature=0.1)
+        if not resp:
+            return base
+
+        order = [
+            int(n) - 1 for n in resp.split(",")
+            if n.strip().isdigit() and 0 <= int(n)-1 < len(base)
+        ]
+
+        seen = set(order)
+        return [base[i] for i in order] + [m for i, m in enumerate(base) if i not in seen]
     
     def auto_categorize_memories_with_deepseek(self):
-        """Use DeepSeek to automatically categorize memories"""
         if not self.use_api:
-            print("❌ DeepSeek API required for categorization")
             return {}
-        
+
         categories = {}
-        categorized_count = 0
-        
-        for memory in self.memory:
-            if 'category' in memory:
+        valid = {"Personal", "Technical", "Facts", "Goals", "Trivia", "Other"}
+
+        for m in self.memory:
+            if "category" in m:
                 continue
-            
-            prompt = f"""Categorize this memory into ONE of these categories:
-            - Personal: about the user's life, feelings, experiences
-            - Technical: about skills, work, technology, learning
-            - Facts: objective information, data, facts
-            - Goals: aspirations, plans, objectives
-            - Trivia: interesting but not essential information
-            - Other: doesn't fit above categories
-            
-            Memory: "{memory['text']}"
-            
-            Return ONLY the category name, nothing else."""
-            
-            category = self.call_deepseek_api(prompt).strip()
-            
-            # Validate category
-            valid_categories = ['Personal', 'Technical', 'Facts', 'Goals', 'Trivia', 'Other']
-            if category not in valid_categories:
-                category = 'Other'
-            
-            memory['category'] = category
-            categorized_count += 1
-            
-            if category not in categories:
-                categories[category] = []
-            categories[category].append(memory['id'])
-        
-        # Store category index
-        self.memory_categories = categories
-        
-        if categorized_count > 0:
+
+            prompt = (
+                "Categorize into one: Personal, Technical, Facts, Goals, Trivia, Other.\n\n"
+                f"Memory: {m['text']}"
+            )
+
+            cat = self.call_deepseek_api(prompt, max_tokens=10, temperature=0.0)
+            m["category"] = cat if cat in valid else "Other"
+            categories.setdefault(m["category"], []).append(m["id"])
+
+        if categories:
+            self.memory_categories = categories
             self.save_memory()
-            print(f"✅ Categorized {categorized_count} memories")
-        
+
         return categories
     
     def assess_memory_quality_with_deepseek(self, memory_text):
-        """Use DeepSeek to assess memory quality on multiple dimensions"""
         if not self.use_api:
-            print("❌ DeepSeek API required for quality assessment")
             return None
-        
-        prompt = f"""Assess this memory on these dimensions (1-10 scale):
-        
-        Memory: "{memory_text}"
-        
-        Dimensions:
-        1. Clarity: How clear and unambiguous is the memory?
-        2. Usefulness: How likely is this to be useful in future?
-        3. Uniqueness: Is this information unique or easily available elsewhere?
-        4. Emotional value: Does this have personal significance?
-        5. Detail level: Is it too vague or appropriately detailed?
-        
-        Return as a JSON object with scores and a brief explanation for each.
-        Example format: {{"clarity": 7, "clarity_reason": "Clear but could be more specific", ...}}"""
-        
-        try:
-            assessment = self.call_deepseek_api(prompt, "You are a memory quality assessment expert.")
-            # Parse JSON from response
-            json_match = re.search(r'\{.*\}', assessment, re.DOTALL)
-            if json_match:
-                return json.loads(json_match.group())
-        except Exception as e:
-            print(f"⚠️  Error parsing quality assessment: {e}")
-        
-        return None
+
+        prompt = (
+            "Score memory 1–10 on clarity, usefulness, uniqueness, emotional value, detail.\n"
+            "Return JSON only.\n\n"
+            f"Memory: {memory_text}"
+        )
+
+        resp = self.call_deepseek_api(prompt, "Memory evaluation expert.", max_tokens=200)
+        if not resp:
+            return None
+
+        match = re.search(r"\{.*\}", resp, re.DOTALL)
+        return json.loads(match.group()) if match else None
     
     def generate_memory_timeline_with_deepseek(self):
-        """Create a narrative timeline from memories"""
-        if not self.use_api:
-            print("❌ DeepSeek API required for timeline generation")
-            return "DeepSeek API required for timeline generation"
-        
-        if len(self.memory) < 3:
-            return "Need at least 3 memories to create a timeline"
-        
-        # Get recent memories
-        recent_memories = sorted(self.memory, key=lambda x: x.get('timestamp', 0), reverse=True)[:8]
-        recent_memories.reverse()  # Oldest first
-        
-        timeline_text = "\n".join([
-            f"Memory {i+1}: {mem['text']}" 
-            for i, mem in enumerate(recent_memories)
-        ])
-        
-        prompt = f"""Create a coherent narrative timeline from these memories:
-        
-        {timeline_text}
-        
-        Organize them into a meaningful timeline with themes and progression.
-        Return as a markdown timeline with dates/themes."""
-        
-        return self.call_deepseek_api(prompt, "You are a historian creating narrative timelines.")
+        if not self.use_api or len(self.memory) < 3:
+            return ""
+
+        mems = sorted(self.memory, key=lambda m: m.get("timestamp", 0))[-8:]
+
+        prompt = (
+            "Create a coherent narrative timeline.\n\n" +
+            "\n".join(f"- {m['text']}" for m in mems)
+        )
+
+        return self.call_deepseek_api(prompt, "Narrative historian.", max_tokens=400)
     
     def calculate_memory_relevance(self, memory):
         """Calculate current relevance score for a memory"""
         score = 1.0
-        
-        # Time decay
         age = self.time_step - memory.get('timestamp', 0)
         time_decay = math.exp(-self.decay_rate * age)
         score *= time_decay
-        
-        # Access frequency
         access_count = memory.get('access_count', 0)
         access_factor = min(access_count / 10, 1.0)
         score *= (0.3 + 0.7 * access_factor)
-        
-        # Recency of last access
         last_access = memory.get('last_accessed')
         if last_access is not None:
             last_access_age = self.time_step - last_access
             recency_factor = math.exp(-0.1 * last_access_age)
             score *= recency_factor
-        
         return max(0.0, min(1.0, score))
     
     def apply_forgetting(self):
         """Apply forgetting mechanism to low-relevance memories"""
         print("\n🧠 APPLYING FORGETTING MECHANISM...")
         print("-"*40)
-        
         memories_to_forget = []
         retained_memories = []
-        
-        # Calculate relevance for all memories
         for memory in self.memory:
             memory['relevance_score'] = self.calculate_memory_relevance(memory)
-        
-        # Sort by relevance (lowest first)
         self.memory.sort(key=lambda x: x['relevance_score'])
-        
         for memory in self.memory:
             relevance = memory['relevance_score']
-            
-            # Criteria for forgetting
             should_forget = (
                 relevance < self.forget_threshold or
                 (len(self.memory) > self.max_memories and relevance < 0.5)
             )
-            
             if should_forget:
                 memories_to_forget.append(memory)
-        
-        # Use intelligent forgetting if we have many candidates
         if len(memories_to_forget) > 3 and self.use_api:
             print(f"\n🤖 Using DeepSeek to select which memories to forget...")
             memories_to_forget = self.intelligent_forgetting_with_deepseek(memories_to_forget)
-        
-        # Actually forget the selected memories
         memory_ids_to_forget = [mem['id'] for mem in memories_to_forget]
         retained_memories = [mem for mem in self.memory if mem['id'] not in memory_ids_to_forget]
-        
         for memory in memories_to_forget:
             forget_entry = {
                 'memory_id': memory['id'],
@@ -908,16 +646,13 @@ class SmartMemoryAgent:
             }
             self.forgetting_log.append(forget_entry)
             print(f"❌ Forgetting: '{memory['text'][:40]}...'")
-        
         self.memory = retained_memories
         self.save_memory()
         self.save_forgetting_log()
-        
         print(f"\n📊 Forgetting Summary:")
         print(f"   Memories forgotten: {len(memories_to_forget)}")
         print(f"   Memories retained: {len(self.memory)}")
         print(f"   Method: {'Intelligent (DeepSeek)' if self.use_api else 'Basic'}")
-        
         return memories_to_forget
     
     def retrieve_memories(self, query, use_personalized=False, user_context=""):
@@ -931,32 +666,20 @@ class SmartMemoryAgent:
         
         for memory in self.memory:
             memory_keywords = set(memory['keywords'])
-            
             score = 0
-            
-            # Keyword overlap
             overlap = set(query_keywords) & memory_keywords
             if overlap:
                 score += len(overlap) * 2.0
-            
-            # Relevance boost
             relevance = memory.get('relevance_score', 0.5)
             score *= (0.5 + 0.5 * relevance)
-            
             if score > 0:
-                # Update access stats
                 memory['access_count'] = memory.get('access_count', 0) + 1
                 memory['last_accessed'] = self.time_step
                 scored_memories.append((score, memory))
-        
-        # Sort by score
         scored_memories.sort(reverse=True, key=lambda x: x[0])
         standard_memories = [memory for score, memory in scored_memories[:5]]
-        
-        # Apply personalized retrieval if requested
         if use_personalized and self.use_api and user_context:
             return self.personalized_retrieval_with_deepseek(query, user_context)[:3]
-        
         return standard_memories[:3]
     
     def answer_query(self, query, use_personalized=False, user_context=""):
@@ -968,19 +691,14 @@ class SmartMemoryAgent:
                 'count': 0,
                 'response_time': 0
             }
-        
         start_time = time.time()
-        
         if use_personalized and self.use_api:
             memories = self.retrieve_memories(query, use_personalized=True, user_context=user_context)
             method = "Personalized (DeepSeek)"
         else:
             memories = self.retrieve_memories(query)
             method = "Standard"
-        
         response_time = time.time() - start_time
-        
-        # Log query
         self.query_log.append({
             'query': query,
             'memories_found': len(memories),
@@ -988,7 +706,6 @@ class SmartMemoryAgent:
             'timestamp': datetime.now().isoformat(),
             'method': method
         })
-        
         if not memories:
             return {
                 'answer': f"I don't have information about '{query}'",
@@ -997,17 +714,13 @@ class SmartMemoryAgent:
                 'response_time': response_time,
                 'method': method
             }
-        
-        # Build answer
         memory_texts = [mem['text'] for mem in memories]
-        
         if len(memory_texts) == 1:
             answer = f"I remember: {memory_texts[0]}"
         else:
             answer = "Based on my memories:\n"
             for i, text in enumerate(memory_texts, 1):
                 answer += f"{i}. {text}\n"
-        
         return {
             'answer': answer.strip(),
             'memories': memories,
@@ -1049,25 +762,18 @@ class SmartMemoryAgent:
         print(f"📈 Capacity usage: {(total/self.max_memories)*100:.1f}%")
         
         if total > 0:
-            # Calculate statistics
             relevance_scores = [m.get('relevance_score', 0) for m in self.memory]
             access_counts = [m.get('access_count', 0) for m in self.memory]
-            
             print(f"📉 Average relevance: {sum(relevance_scores)/total:.3f}")
             print(f"📈 Average access count: {sum(access_counts)/total:.1f}")
-            
-            # Count memory types
             merged_count = sum(1 for m in self.memory if m.get('is_merged', False))
             summary_count = sum(1 for m in self.memory if m.get('is_summary', False))
             meta_count = sum(1 for m in self.memory if m.get('is_meta_memory', False))
-            
             print(f"\n📋 Memory types:")
             print(f"   Regular: {total - merged_count - summary_count - meta_count}")
             print(f"   Merged: {merged_count}")
             print(f"   Summaries: {summary_count}")
             print(f"   Meta: {meta_count}")
-            
-            # Show categories if available
             if self.memory_categories:
                 print(f"\n🏷️  Categories:")
                 for category, ids in self.memory_categories.items():
@@ -1087,7 +793,7 @@ class SmartMemoryAgent:
         
         for category, memory_ids in self.memory_categories.items():
             print(f"\n{category.upper()}: {len(memory_ids)} memories")
-            for mem_id in memory_ids[:3]:  # Show first 3
+            for mem_id in memory_ids[:3]:
                 memory = next((m for m in self.memory if m['id'] == mem_id), None)
                 if memory:
                     print(f"  - '{memory['text'][:50]}...'")
@@ -1101,7 +807,6 @@ def main():
     print("🤖 ENHANCED SMART MEMORY AGENT WITH DEEPSEEK AI")
     print("="*60)
     
-    # Check for API key
     if not DEEPSEEK_API_KEY:
         print("⚠️  WARNING: No DEEPSEEK_API_KEY found in environment variables.")
         print("⚠️  Set it in .env file or environment: DEEPSEEK_API_KEY=your_key_here")
@@ -1112,7 +817,6 @@ def main():
     else:
         use_api = True
     
-    # Create agent
     agent = SmartMemoryAgent(
         decay_rate=0.02,
         forget_threshold=0.2,
@@ -1120,11 +824,9 @@ def main():
         use_api=use_api
     )
     
-    # Store initial memories if empty
     if len(agent.memory) == 0:
         print("\n📝 SETTING UP INITIAL MEMORIES...")
-        print("-"*40)
-        
+        print("-"*40)        
         initial_memories = [
             "My favorite sport is football and I play it every weekend.",
             "I study artificial intelligence and machine learning at university.",
@@ -1135,16 +837,13 @@ def main():
             "Reinforcement learning is used for game playing AI agents.",
             "I enjoy watching football matches on weekends with friends."
         ]
-        
         for text in initial_memories:
             print(f"\nStoring: '{text}'")
             agent.store_memory(text)
             if agent.use_api:
-                time.sleep(1)  # Delay to avoid API rate limits
+                time.sleep(1)
     else:
         print(f"\n✅ Found {len(agent.memory)} existing memories")
-    
-    # Main menu
     while True:
         print("\n" + "="*60)
         print("MAIN MENU - ENHANCED SMART MEMORY AGENT")
@@ -1318,7 +1017,6 @@ def main():
             print("❌ Invalid choice")
         
         input("\nPress Enter to continue...")
-
 
 if __name__ == "__main__":
     main()
