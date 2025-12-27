@@ -1,0 +1,191 @@
+[
+  {
+    "memory_id": 0,
+    "text": "My favorite sport is football and I play it every weekend.",
+    "relevance_score": 0.197114045944517,
+    "access_count": 0,
+    "age": 21,
+    "forgotten_at": "2025-12-27T16:47:07.996175",
+    "reason": "low_relevance"
+  },
+  {
+    "memory_id": 1,
+    "text": "I study artificial intelligence and machine learning at university.",
+    "relevance_score": 0.20109601381069178,
+    "access_count": 0,
+    "age": 20,
+    "forgotten_at": "2025-12-27T16:47:07.996715",
+    "reason": "capacity_limit"
+  },
+  {
+    "memory_id": 2,
+    "text": "Memory decay is important for long-term reasoning in AI systems.",
+    "relevance_score": 0.20515842276370674,
+    "access_count": 0,
+    "age": 19,
+    "forgotten_at": "2025-12-27T16:47:07.997352",
+    "reason": "capacity_limit"
+  },
+  {
+    "memory_id": 3,
+    "text": "I want to build advanced AGI systems that can reason like humans.",
+    "relevance_score": 0.2093028978213093,
+    "access_count": 0,
+    "age": 18,
+    "forgotten_at": "2025-12-27T16:47:07.997718",
+    "reason": "capacity_limit"
+  },
+  {
+    "memory_id": 4,
+    "text": "Python is my primary programming language for AI development.",
+    "relevance_score": 0.21353109682878288,
+    "access_count": 0,
+    "age": 17,
+    "forgotten_at": "2025-12-27T16:47:07.998219",
+    "reason": "capacity_limit"
+  },
+  {
+    "memory_id": 5,
+    "text": "Deep learning models require large amounts of training data.",
+    "relevance_score": 0.21784471112210727,
+    "access_count": 0,
+    "age": 16,
+    "forgotten_at": "2025-12-27T16:47:07.998673",
+    "reason": "capacity_limit"
+  },
+  {
+    "memory_id": 6,
+    "text": "Reinforcement learning agents learn through trial and error.",
+    "relevance_score": 0.22224546620451535,
+    "access_count": 0,
+    "age": 15,
+    "forgotten_at": "2025-12-27T16:47:07.999107",
+    "reason": "capacity_limit"
+  },
+  {
+    "memory_id": 7,
+    "text": "Natural language processing helps computers understand human language.",
+    "relevance_score": 0.22673512243671762,
+    "access_count": 0,
+    "age": 14,
+    "forgotten_at": "2025-12-27T16:47:07.999524",
+    "reason": "capacity_limit"
+  },
+  {
+    "memory_id": 8,
+    "text": "I enjoy watching basketball games on television.",
+    "relevance_score": 0.23131547574106986,
+    "access_count": 0,
+    "age": 13,
+    "forgotten_at": "2025-12-27T16:47:07.999975",
+    "reason": "capacity_limit"
+  },
+  {
+    "memory_id": 9,
+    "text": "Machine learning algorithms can recognize patterns in data.",
+    "relevance_score": 0.23598835831996604,
+    "access_count": 0,
+    "age": 12,
+    "forgotten_at": "2025-12-27T16:47:08.000421",
+    "reason": "capacity_limit"
+  },
+  {
+    "memory_id": 10,
+    "text": "Neural networks are inspired by the human brain structure.",
+    "relevance_score": 0.24075563938874353,
+    "access_count": 0,
+    "age": 11,
+    "forgotten_at": "2025-12-27T16:47:08.000810",
+    "reason": "capacity_limit"
+  },
+  {
+    "memory_id": 11,
+    "text": "I prefer coffee over tea in the morning.",
+    "relevance_score": 0.24561922592339452,
+    "access_count": 0,
+    "age": 10,
+    "forgotten_at": "2025-12-27T16:47:08.001183",
+    "reason": "capacity_limit"
+  },
+  {
+    "memory_id": 12,
+    "text": "Data preprocessing is crucial for machine learning success.",
+    "relevance_score": 0.2505810634233816,
+    "access_count": 0,
+    "age": 9,
+    "forgotten_at": "2025-12-27T16:47:08.001574",
+    "reason": "capacity_limit"
+  },
+  {
+    "memory_id": 13,
+    "text": "I visited Paris last summer for a research conference.",
+    "relevance_score": 0.2556431366898634,
+    "access_count": 0,
+    "age": 8,
+    "forgotten_at": "2025-12-27T16:47:08.001966",
+    "reason": "capacity_limit"
+  },
+  {
+    "memory_id": 14,
+    "text": "Transfer learning allows models to use knowledge from one task for another.",
+    "relevance_score": 0.26080747061964177,
+    "access_count": 0,
+    "age": 7,
+    "forgotten_at": "2025-12-27T16:47:08.002396",
+    "reason": "capacity_limit"
+  },
+  {
+    "memory_id": 15,
+    "text": "Regularization techniques prevent overfitting in machine learning.",
+    "relevance_score": 0.2660761310151472,
+    "access_count": 0,
+    "age": 6,
+    "forgotten_at": "2025-12-27T16:47:08.002806",
+    "reason": "capacity_limit"
+  },
+  {
+    "memory_id": 16,
+    "text": "I like to read science fiction books in my free time.",
+    "relevance_score": 0.27145122541078787,
+    "access_count": 0,
+    "age": 5,
+    "forgotten_at": "2025-12-27T16:47:08.004176",
+    "reason": "capacity_limit"
+  },
+  {
+    "memory_id": 17,
+    "text": "Computer vision enables machines to interpret visual information.",
+    "relevance_score": 0.27693490391599074,
+    "access_count": 0,
+    "age": 4,
+    "forgotten_at": "2025-12-27T16:47:08.004823",
+    "reason": "capacity_limit"
+  },
+  {
+    "memory_id": 18,
+    "text": "Unsupervised learning finds patterns without labeled data.",
+    "relevance_score": 0.2825293600752746,
+    "access_count": 0,
+    "age": 3,
+    "forgotten_at": "2025-12-27T16:47:08.005207",
+    "reason": "capacity_limit"
+  },
+  {
+    "memory_id": 19,
+    "text": "I believe AI will transform healthcare in the next decade.",
+    "relevance_score": 0.2882368317456969,
+    "access_count": 0,
+    "age": 2,
+    "forgotten_at": "2025-12-27T16:47:08.005669",
+    "reason": "capacity_limit"
+  },
+  {
+    "memory_id": 20,
+    "text": "hello my beautiful llm ai bot. my name is ayaan and my favourite university is mit.",
+    "relevance_score": 0.2940596019920266,
+    "access_count": 0,
+    "age": 1,
+    "forgotten_at": "2025-12-27T16:47:08.006135",
+    "reason": "capacity_limit"
+  }
+]

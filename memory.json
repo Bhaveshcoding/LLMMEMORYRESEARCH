@@ -1,0 +1,20 @@
+[
+  {
+    "id": 0,
+    "text": "hello llm ai bot. my name is ayaan",
+    "keywords": [
+      "hello",
+      "llm",
+      "bot",
+      "na",
+      "ayaan"
+    ],
+    "timestamp": 21,
+    "access_count": 0,
+    "original_text": "hello llm ai bot. my name is ayaan",
+    "creation_time": "2025-12-27T16:49:27.119407",
+    "last_accessed": null,
+    "relevance_score": 1.0,
+    "merged_from": []
+  }
+]

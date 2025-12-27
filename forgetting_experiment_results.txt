@@ -1,0 +1,96 @@
+Forgetting Mechanism Experiment Results
+==================================================
+
+Initial memories: 21
+Final memories: 0
+Memories forgotten: 21
+Reduction rate: 100.0%
+Forget threshold: 0.2
+Max capacity: 20
+
+Forgotten Memories:
+------------------------------
+- My favorite sport is football and I play it every weekend.
+  Relevance: 0.197
+  Age: 21 steps
+
+- I study artificial intelligence and machine learning at university.
+  Relevance: 0.201
+  Age: 20 steps
+
+- Memory decay is important for long-term reasoning in AI systems.
+  Relevance: 0.205
+  Age: 19 steps
+
+- I want to build advanced AGI systems that can reason like humans.
+  Relevance: 0.209
+  Age: 18 steps
+
+- Python is my primary programming language for AI development.
+  Relevance: 0.214
+  Age: 17 steps
+
+- Deep learning models require large amounts of training data.
+  Relevance: 0.218
+  Age: 16 steps
+
+- Reinforcement learning agents learn through trial and error.
+  Relevance: 0.222
+  Age: 15 steps
+
+- Natural language processing helps computers understand human language.
+  Relevance: 0.227
+  Age: 14 steps
+
+- I enjoy watching basketball games on television.
+  Relevance: 0.231
+  Age: 13 steps
+
+- Machine learning algorithms can recognize patterns in data.
+  Relevance: 0.236
+  Age: 12 steps
+
+- Neural networks are inspired by the human brain structure.
+  Relevance: 0.241
+  Age: 11 steps
+
+- I prefer coffee over tea in the morning.
+  Relevance: 0.246
+  Age: 10 steps
+
+- Data preprocessing is crucial for machine learning success.
+  Relevance: 0.251
+  Age: 9 steps
+
+- I visited Paris last summer for a research conference.
+  Relevance: 0.256
+  Age: 8 steps
+
+- Transfer learning allows models to use knowledge from one task for another.
+  Relevance: 0.261
+  Age: 7 steps
+
+- Regularization techniques prevent overfitting in machine learning.
+  Relevance: 0.266
+  Age: 6 steps
+
+- I like to read science fiction books in my free time.
+  Relevance: 0.271
+  Age: 5 steps
+
+- Computer vision enables machines to interpret visual information.
+  Relevance: 0.277
+  Age: 4 steps
+
+- Unsupervised learning finds patterns without labeled data.
+  Relevance: 0.283
+  Age: 3 steps
+
+- I believe AI will transform healthcare in the next decade.
+  Relevance: 0.288
+  Age: 2 steps
+
+- hello my beautiful llm ai bot. my name is ayaan and my favourite university is mit.
+  Relevance: 0.294
+  Age: 1 steps
+
