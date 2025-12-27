@@ -1,20 +1,168 @@
 [
   {
     "id": 0,
-    "text": "hello llm ai bot. my name is ayaan",
+    "text": "My favorite sport is football and I play it every weekend.",
     "keywords": [
-      "hello",
-      "llm",
-      "bot",
-      "na",
-      "ayaan"
+      "favorite",
+      "sport",
+      "football",
+      "play",
+      "every",
+      "weekend"
     ],
-    "timestamp": 21,
+    "timestamp": 0,
     "access_count": 0,
-    "original_text": "hello llm ai bot. my name is ayaan",
-    "creation_time": "2025-12-27T16:49:27.119407",
+    "original_text": "my favorite sport is football and i play it every weekend.",
+    "creation_time": "2025-12-27T22:36:04.555194",
     "last_accessed": null,
     "relevance_score": 1.0,
+    "meaningfulness_score": 0.6,
+    "extraction_method": "fallback",
+    "merged_from": []
+  },
+  {
+    "id": 1,
+    "text": "I study artificial intelligence and machine learning at university.",
+    "keywords": [
+      "study",
+      "artificial",
+      "intelligence",
+      "machine",
+      "learning",
+      "university"
+    ],
+    "timestamp": 1,
+    "access_count": 0,
+    "original_text": "i study artificial intelligence and machine learning at university.",
+    "creation_time": "2025-12-27T22:36:04.562832",
+    "last_accessed": null,
+    "relevance_score": 1.0,
+    "meaningfulness_score": 0.75,
+    "extraction_method": "fallback",
+    "merged_from": []
+  },
+  {
+    "id": 2,
+    "text": "Memory decay is important for long-term reasoning in AI systems.",
+    "keywords": [
+      "memory",
+      "decay",
+      "important",
+      "reasoning",
+      "system"
+    ],
+    "timestamp": 2,
+    "access_count": 0,
+    "original_text": "memory decay is important for long-term reasoning in ai systems.",
+    "creation_time": "2025-12-27T22:36:04.567618",
+    "last_accessed": null,
+    "relevance_score": 1.0,
+    "meaningfulness_score": 0.5,
+    "extraction_method": "fallback",
+    "merged_from": []
+  },
+  {
+    "id": 3,
+    "text": "I want to build advanced AGI systems that can reason like humans.",
+    "keywords": [
+      "want",
+      "build",
+      "advanced",
+      "agi",
+      "system",
+      "reason"
+    ],
+    "timestamp": 3,
+    "access_count": 0,
+    "original_text": "i want to build advanced agi systems that can reason like humans.",
+    "creation_time": "2025-12-27T22:36:04.572566",
+    "last_accessed": null,
+    "relevance_score": 1.0,
+    "meaningfulness_score": 0.5454545454545454,
+    "extraction_method": "fallback",
+    "merged_from": []
+  },
+  {
+    "id": 4,
+    "text": "Python is my primary programming language for AI development.",
+    "keywords": [
+      "python",
+      "primary",
+      "programming",
+      "language",
+      "development"
+    ],
+    "timestamp": 4,
+    "access_count": 0,
+    "original_text": "python is my primary programming language for ai development.",
+    "creation_time": "2025-12-27T22:36:04.577249",
+    "last_accessed": null,
+    "relevance_score": 1.0,
+    "meaningfulness_score": 0.5555555555555556,
+    "extraction_method": "fallback",
+    "merged_from": []
+  },
+  {
+    "id": 5,
+    "text": "Neural networks require large amounts of training data to work well.",
+    "keywords": [
+      "neural",
+      "network",
+      "require",
+      "large",
+      "amount",
+      "training"
+    ],
+    "timestamp": 5,
+    "access_count": 0,
+    "original_text": "neural networks require large amounts of training data to work well.",
+    "creation_time": "2025-12-27T22:36:04.582858",
+    "last_accessed": null,
+    "relevance_score": 1.0,
+    "meaningfulness_score": 0.5454545454545454,
+    "extraction_method": "fallback",
+    "merged_from": []
+  },
+  {
+    "id": 6,
+    "text": "Reinforcement learning is used for game playing AI agents.",
+    "keywords": [
+      "reinforcement",
+      "learning",
+      "used",
+      "game",
+      "playing",
+      "agent"
+    ],
+    "timestamp": 6,
+    "access_count": 0,
+    "original_text": "reinforcement learning is used for game playing ai agents.",
+    "creation_time": "2025-12-27T22:36:04.589865",
+    "last_accessed": null,
+    "relevance_score": 1.0,
+    "meaningfulness_score": 0.6666666666666666,
+    "extraction_method": "fallback",
+    "merged_from": []
+  },
+  {
+    "id": 7,
+    "text": "I enjoy watching football matches on weekends with friends.",
+    "keywords": [
+      "enjoy",
+      "watching",
+      "football",
+      "match",
+      "weekend",
+      "friend"
+    ],
+    "timestamp": 7,
+    "access_count": 0,
+    "original_text": "i enjoy watching football matches on weekends with friends.",
+    "creation_time": "2025-12-27T22:36:04.594774",
+    "last_accessed": null,
+    "relevance_score": 1.0,
+    "meaningfulness_score": 0.75,
+    "extraction_method": "fallback",
     "merged_from": []
   }
 ]

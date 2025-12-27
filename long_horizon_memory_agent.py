@@ -26,7 +26,7 @@ STOP_WORDS = set(stopwords.words('english'))
 MEMORY_FILE = "memory.json"
 FORGET_LOG_FILE = "forgetting_log.json"
 
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "sk-8abf579415c645a89d739998a041017d").strip()
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "").strip()
 DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
 client = OpenAI(
     api_key=DEEPSEEK_API_KEY,

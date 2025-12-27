@@ -1,6 +1,6 @@
-memory.json
-forgetting_log.json
-forgetting_experiment_results.txt
 __pycache__
 *.pyc
+*.json.*
+*.json
 venv
+.env
