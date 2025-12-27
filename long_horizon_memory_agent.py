@@ -11,7 +11,6 @@ from datetime import datetime, timedelta
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
-# Download required data
 nltk.download('punkt', quiet=True)
 nltk.download('stopwords', quiet=True)
 
