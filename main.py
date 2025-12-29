@@ -1,7 +1,7 @@
 from ai import FileHandler
 from ai import AIMemory
 
-def initialize_memories(agent):
+def initialize_memories(agent: AIMemory):
     print("\n📝 SETTING UP INITIAL MEMORIES...")
     print("-"*40)
     initial_memories = [
@@ -37,7 +37,7 @@ def initialize_memories(agent):
         agent.store_memory(text)
     print(f"✅ Initialized {len(initial_memories)} memories")
 
-def handle_test_query(agent):
+def handle_test_query(agent: AIMemory):
     print("\n" + "="*60)
     print("TEST QUERY")
     print("="*60)
@@ -57,7 +57,7 @@ def handle_test_query(agent):
                 print(f"     Keywords: {', '.join(memory['keywords'][:3])}")
         print("="*60)
 
-def handle_store_memory(agent):
+def handle_store_memory(agent: AIMemory):
     print("\n" + "="*60)
     print("STORE NEW MEMORY")
     print("="*60)
@@ -66,7 +66,7 @@ def handle_store_memory(agent):
         stored = agent.store_memory(text)
         print(f"✅ Memory stored: {stored['text'][:50]}..." if stored else "❌ Memory not stored")
 
-def handle_forgetting(agent):
+def handle_forgetting(agent: AIMemory):
     print("\n" + "="*60)
     print("APPLY FORGETTING")
     print("="*60)
@@ -75,7 +75,7 @@ def handle_forgetting(agent):
         forgotten = agent.apply_forgetting()
         print(f"✅ Forgot {len(forgotten)} memories")
 
-def handle_view_memories(agent):
+def handle_view_memories(agent: AIMemory):
     print("\n" + "="*60)
     print("ALL MEMORIES")
     print("="*60)
@@ -89,7 +89,7 @@ def handle_view_memories(agent):
     else:
         print("No memories stored.")
 
-def handle_keyword_extraction(agent):
+def handle_keyword_extraction(agent: AIMemory):
     print("\n" + "="*60)
     print("TEST KEYWORD EXTRACTION")
     print("="*60)
@@ -100,7 +100,7 @@ def handle_keyword_extraction(agent):
         print(f"   Keywords: {keywords}")
         print(f"   Score: {score:.2f}")
 
-def handle_pattern_discovery(agent):
+def handle_pattern_discovery(agent: AIMemory):
     print("\n" + "="*60)
     print("DISCOVER PATTERNS")
     print("="*60)
@@ -108,7 +108,7 @@ def handle_pattern_discovery(agent):
     print(f"\n🔍 Pattern Analysis:")
     print(analysis if analysis else "No strong patterns found")
 
-def handle_categorize_memories(agent):
+def handle_categorize_memories(agent: AIMemory):
     print("\n" + "="*60)
     print("AUTO-CATEGORIZE MEMORIES")
     print("="*60)
@@ -117,7 +117,7 @@ def handle_categorize_memories(agent):
     for category, ids in categories.items():
         print(f"   {category}: {len(ids)} memories")
 
-def handle_assess_quality(agent):
+def handle_assess_quality(agent: AIMemory):
     print("\n" + "="*60)
     print("ASSESS MEMORY QUALITY")
     print("="*60)
@@ -128,7 +128,7 @@ def handle_assess_quality(agent):
         for key, value in assessment.items():
             print(f"   {key}: {value}")
 
-def handle_generate_timeline(agent):
+def handle_generate_timeline(agent: AIMemory):
     print("\n" + "="*60)
     print("GENERATE TIMELINE")
     print("="*60)
@@ -137,7 +137,7 @@ def handle_generate_timeline(agent):
     for item in timeline:
         print(f"  {item['text']}")
 
-def handle_export_memories(agent):
+def handle_export_memories(agent: AIMemory):
     print("\n" + "="*60)
     print("EXPORT MEMORIES")
     print("="*60)
@@ -145,7 +145,7 @@ def handle_export_memories(agent):
     filename = filename if filename else "memory_export.json"
     agent.file_handler.export_memories(filename)
 
-def show_memory_health(agent):
+def show_memory_health(agent: AIMemory):
     print("\n🧠 MEMORY HEALTH REPORT")
     print("="*60)
     total = len(agent.memory)
@@ -163,7 +163,7 @@ def show_memory_health(agent):
                 print(f"   {category}: {len(ids)}")
     print("="*60)
 
-def show_memory_categories(agent):
+def show_memory_categories(agent: AIMemory):
     if not agent.memory_categories:
         print("\n⚠️  No categories assigned yet. Run auto-categorization first.")
         return

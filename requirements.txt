@@ -1,4 +1,1 @@
 nltk
-requests
-openai
-httpx
